@@ -7,6 +7,21 @@
           stroke: #E6E6E6;
           stroke-width:2px;
         }
+
+        text.mono {
+          font-size: 9pt;
+          font-family: Consolas, courier;
+          fill: #aaa;
+        }
+
+        text.axis-days {
+          fill: #000;
+        }
+
+        text.axis-weeks {
+          fill: #000;
+        }
+
     </style>
     <script src="/vendor/d3.min.js"></script>
   </head>
@@ -36,64 +51,133 @@
 
 
     d3.json("/data/git-commit-frequency.json", function (error, data) {
+
       var colorScale = d3.scaleQuantile()
           .domain([0, 8, d3.max(data, function (d, i) {
-             console.log(d.days);
+            //  console.log(d.days);
             //  console.log("i value", i)
             return d.days; })])
           .range(colors);
 
 
   let gridSize = 20;
-  let width = (gridSize + 1) * 7;
+  let width = (gridSize + 1) * 52;
   let height = (gridSize + 1) * data.length;
+  let legendElementWidth = gridSize * 2;
 
   // define range!!!
   var x = d3.scaleLinear()
-  .domain([0, 7])
+  .domain([0, 52])
   .range([0, width]);
 
-  //52 weeks
+  //row height: 7 (represent days of a week)
   var y = d3.scaleLinear()
-  .domain([0, data.length])
+  .domain([0, 7])
   .rangeRound([height, 0]);
 
   let svg = d3.select("body").append("svg")
     .attr("width", width)
   .attr("height", height)
 
-  // Generate rows for each json object
-  var rows = svg.selectAll('.row')
+
+  console.log(days);
+
+  // Create labels!!!
+  var dayLabels = svg.selectAll('.dayLabel')
+  .data(days)
+  .enter()
+  .append("text")
+  .text(function (d) { return d; })
+  .attr("x", 10)
+  .attr("y", function (d, i) { return (i * gridSize) + 30; })
+  .attr("class", "mono");
+
+  var weekLabels = svg.selectAll('.weekLabel')
   .data(data)
   .enter()
-  .append('g') //append to svg in html
-  .attr("transform", function(d, i){
-    return "translate(0," + y(i) + ")" // translate each row by y(i)
+  .append("text")
+  .text(function(d,i) {return i + 1; })
+  .attr("x", function (d, i) { return (i * gridSize) + 40; })
+  .attr("y", 10)
+  .attr("class", "mono");
+
+
+  // Generate rows for each json object
+  // 7 row
+
+  // var rows = svg.selectAll('.row')
+  // .data(data)
+  // .enter()
+  // .append('g') //append to svg in html
+  // .attr("transform", function(d, i){
+  //   return "translate(0," + y(i) + ")" // translate each row by y(i)
+  // })
+
+  var columns = svg.selectAll('.columns')
+  .data(data)
+  .enter()
+  .append('g')
+  .attr("transform", function(d, i) {
+    // console.log(x(i));
+    return "translate(" + 20*(i+2) + ", 0)"
   })
 
+  let box = columns.selectAll("rect")
+  .data(function(d) { return d.days })
+  .enter()
+  .append("rect")
+  .attr("y", function(d,i) { return 20*(i+1); })
+  .attr("width", gridSize)
+  .attr("height", gridSize)
+  .style("fill", colors[0])
+  .attr("class", "bordered");
+
   // Generate rects for the array of days per object
-  let box = rows.selectAll("rect")
-    .data(function(d){ return d.days }) // instead of dataset, use the array
-    .enter()
-    .append("rect")
-    .attr("x", function(d, i) { return x(i); }) // use index to generate position for x
-    .attr("width", gridSize)
-    .attr("height", gridSize)
-    .style("fill", colors[0])
-    .attr("class", "bordered");
+
+  // let box = rows.selectAll("rect")
+  //   .data(function(d){ return d.days }) // instead of dataset, use the array
+  //   .enter()
+  //   .append("rect")
+  //   .attr("x", function(d, i) { return x(i); }) // use index to generate position for x
+  //   .attr("width", gridSize)
+  //   .attr("height", gridSize)
+  //   .style("fill", colors[0])
+  //   .attr("class", "bordered");
 
     box.transition().duration(1000)
     //  .data (function(d) { return d.days })
     .style("fill", function(d, i) {
 
       // d accesses each box, but we want to only access the d per row then apply colour
-      console.log("data inside box transition DDAYS", d);
-
       // i -> just 0, 1, 2 ... 6
-      return colors[i]})
-
-
+      return colors[d];
     });
+
+
+    // LEGEND
+    var legend = svg.selectAll(".legend")
+    .data(colors)
+    .enter()
+    .append('g')
+    .attr('class', 'legend');
+
+  legend.append("rect")
+  .attr("x", function(d, i) { return legendElementWidth * i; })
+  .attr("y", gridSize * 8 + 20)
+  .attr("width", legendElementWidth)
+  .attr("height", gridSize / 2)
+  .style("fill", function(d, i) { return colors[i]; });
+
+  legend.append("text")
+   .attr("class", "mono")
+   .text(function(d, i) { return i; })
+   .attr("x", function(d, i) { return legendElementWidth * i; })
+   .attr("y", (gridSize * 8 + 25) + gridSize);
+
+
+
+
+  });
 
 
 
