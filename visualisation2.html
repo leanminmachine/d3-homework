@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+  <head>
+    <style>
+        rect.bordered {
+          stroke: #E6E6E6;
+          stroke-width:2px;
+        }
+    </style>
+    <script src="/vendor/d3.min.js"></script>
+  </head>
+
+  <body>
+    <div id = "chart"></div>
+    <script type = "text/javascript">
+    // Variables
+    var margin = { top: 50, right: 0, bottom: 100, left: 30 },
+         width = 960 - margin.left - margin.right,
+         height = 430 - margin.top - margin.bottom,
+         gridSize = Math.floor(width / 52),
+         legendElementWidth = gridSize*2;
+
+    //column
+    var days = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+    var weeks = 52; // 52 weeks!!!
+    var colors = ["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#253494"];
+    var storageArr = [];
+
+    // Create svg element
+    var svg = d3.select("#chart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+    d3.json("/data/git-commit-frequency.json", function (error, data) {
+
+
+      data.forEach(function(d) {
+        ddays = +d.days;
+        total = +d.total;
+        week = +d.week;
+      });
+
+      console.log(data);
+      console.log(ddays)
+
+      // 52
+      var nestByWeeks = d3.nest()
+      .key(function(d) {
+        return d.week;
+      })
+      .entries(data);
+
+      //console.log(storageArr);
+
+      // define range!!!
+      var x = d3.scaleLinear().domain([0, data.length]).range([0, width]);
+
+      //52 weeks
+      var y = d3.scaleLinear()
+      .domain([0, 52])
+      .rangeRound([height, 0]);
+
+      // Generate rectangle for each json object
+      var rectangles = svg.selectAll('rect')
+      .data(data)
+      .enter()
+      .append('rect')
+      .attr("x", function(d, index) {
+        return x(days); })
+      .attr("y", function(d, index) {
+        return y; })
+      .attr("width", gridSize)
+      .attr("height", gridSize)
+      .style("fill", 'black')
+      .attr("class", "bordered");
+
+
+    });
+
+
+
+    </script>
+  </body>
