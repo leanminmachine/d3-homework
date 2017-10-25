@@ -15,11 +15,11 @@
     <div id = "chart"></div>
     <script type = "text/javascript">
     // Variables
-    var margin = { top: 50, right: 0, bottom: 100, left: 30 },
-         width = 960 - margin.left - margin.right,
-         height = 430 - margin.top - margin.bottom,
-         gridSize = Math.floor(width / 52),
-         legendElementWidth = gridSize*2;
+    // var margin = { top: 50, right: 0, bottom: 100, left: 30 },
+    //      width = 960 - margin.left - margin.right,
+    //      height = 430 - margin.top - margin.bottom,
+    //      gridSize = Math.floor(width / 52),
+    //      legendElementWidth = gridSize*2;
 
     //column
     var days = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -28,55 +28,69 @@
     var storageArr = [];
 
     // Create svg element
-    var svg = d3.select("#chart").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    // var svg = d3.select("#chart").append("svg")
+    // .attr("width", width + margin.left + margin.right)
+    // .attr("height", height + margin.top + margin.bottom)
+    // .append("g")
+    // .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 
     d3.json("/data/git-commit-frequency.json", function (error, data) {
+      var colorScale = d3.scaleQuantile()
+          .domain([0, 8, d3.max(data, function (d, i) {
+             console.log(d.days);
+            //  console.log("i value", i)
+            return d.days; })])
+          .range(colors);
 
 
-      data.forEach(function(d) {
-        ddays = +d.days;
-        total = +d.total;
-        week = +d.week;
-      });
+  let gridSize = 20;
+  let width = (gridSize + 1) * 7;
+  let height = (gridSize + 1) * data.length;
 
-      console.log(data);
-      console.log(ddays)
+  // define range!!!
+  var x = d3.scaleLinear()
+  .domain([0, 7])
+  .range([0, width]);
 
-      // 52
-      var nestByWeeks = d3.nest()
-      .key(function(d) {
-        return d.week;
-      })
-      .entries(data);
+  //52 weeks
+  var y = d3.scaleLinear()
+  .domain([0, data.length])
+  .rangeRound([height, 0]);
 
-      //console.log(storageArr);
+  let svg = d3.select("body").append("svg")
+    .attr("width", width)
+  .attr("height", height)
 
-      // define range!!!
-      var x = d3.scaleLinear().domain([0, data.length]).range([0, width]);
+  // Generate rows for each json object
+  var rows = svg.selectAll('.row')
+  .data(data)
+  .enter()
+  .append('g') //append to svg in html
+  .attr("transform", function(d, i){
+    return "translate(0," + y(i) + ")" // translate each row by y(i)
+  })
 
-      //52 weeks
-      var y = d3.scaleLinear()
-      .domain([0, 52])
-      .rangeRound([height, 0]);
+  // Generate rects for the array of days per object
+  let box = rows.selectAll("rect")
+    .data(function(d){ return d.days }) // instead of dataset, use the array
+    .enter()
+    .append("rect")
+    .attr("x", function(d, i) { return x(i); }) // use index to generate position for x
+    .attr("width", gridSize)
+    .attr("height", gridSize)
+    .style("fill", colors[0])
+    .attr("class", "bordered");
 
-      // Generate rectangle for each json object
-      var rectangles = svg.selectAll('rect')
-      .data(data)
-      .enter()
-      .append('rect')
-      .attr("x", function(d, index) {
-        return x(days); })
-      .attr("y", function(d, index) {
-        return y; })
-      .attr("width", gridSize)
-      .attr("height", gridSize)
-      .style("fill", 'black')
-      .attr("class", "bordered");
+    box.transition().duration(1000)
+    //  .data (function(d) { return d.days })
+    .style("fill", function(d, i) {
+
+      // d accesses each box, but we want to only access the d per row then apply colour
+      console.log("data inside box transition DDAYS", d);
+
+      // i -> just 0, 1, 2 ... 6
+      return colors[i]})
 
 
     });
