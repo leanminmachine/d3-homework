@@ -14,56 +14,49 @@
 
   .line1 {
     fill: none;
-    stroke: red;
-    stroke-width: 1.5px;
+    stroke-width: 3px;
     stroke-linejoin: round;
     stroke-linecap:round;
   }
 
   .line2 {
     fill: none;
-    stroke: blue;
-    stroke-width: 1.5px;
+    stroke-width: 3px;
     stroke-linejoin: round;
     stroke-linecap:round;
   }
 
   .line3 {
     fill: none;
-    stroke: yellow;
-    stroke-width: 1.5px;
+    stroke-width: 3px;
     stroke-linejoin: round;
     stroke-linecap:round;
   }
 
   .line4 {
     fill: none;
-    stroke: green;
-    stroke-width: 1.5px;
+    stroke-width: 3px;
     stroke-linejoin: round;
     stroke-linecap:round;
   }
 
   .line5 {
     fill: none;
-    stroke: orange;
-    stroke-width: 1.5px;
+    stroke-width: 3px;
     stroke-linejoin: round;
     stroke-linecap:round;
   }
 
   .line6 {
     fill: none;
-    stroke: brown;
-    stroke-width: 1.5px;
+    stroke-width: 3px;
     stroke-linejoin: round;
     stroke-linecap:round;
   }
 
   .line7 {
     fill: none;
-    stroke: purple;
-    stroke-width: 1.5px;
+    stroke-width: 3px;
     stroke-linejoin: round;
     stroke-linecap:round;
   }
@@ -271,37 +264,44 @@
     svg.append("path")
     .datum(dataset)
     .attr("class", "line1") //to add the css CLASS called line, will overwrite custom styles you define in attr
-    .attr("d", lineLessThan7); //d -> data
+    .attr("d", lineLessThan7) //d -> data
+    .attr("stroke", colors[0]);
 
     svg.append("path")
     .datum(dataset)
     .attr("class", "line2")
-    .attr("d", line8to14);
+    .attr("d", line8to14)
+    .attr("stroke", colors[1]);
 
     svg.append("path")
     .datum(dataset)
     .attr("class", "line3")
-    .attr("d", line15to24);
+    .attr("d", line15to24)
+    .attr("stroke", colors[2]);
 
     svg.append("path")
     .datum(dataset)
     .attr("class", "line4")
-    .attr("d", line25to34);
+    .attr("d", line25to34)
+    .attr("stroke", colors[3]);
 
     svg.append("path")
     .datum(dataset)
     .attr("class", "line5")
-    .attr("d", line35to49);
+    .attr("d", line35to49)
+    .attr("stroke", colors[4]);
 
     svg.append("path")
     .datum(dataset)
     .attr("class", "line6")
-    .attr("d", line50to59);
+    .attr("d", line50to59)
+    .attr("stroke", colors[5]);
 
     svg.append("path")
     .datum(dataset)
     .attr("class", "line7")
-    .attr("d", line60);
+    .attr("d", line60)
+    .attr("stroke", colors[6]);
 
     //draw x-axis
     svg.append("g")
@@ -313,16 +313,6 @@
     svg.append("g")
     .attr("class", "axis")
     .call(d3.axisLeft(y).ticks(null, "s"))
-
-    // 12. Appends a circle for each datapoint
-    // svg.selectAll(".dot")
-    // .data(dataset)
-    // .enter().append("circle") // Uses the enter().append() method
-    // .attr("class", "dot") // Assign a class for styling
-    // .attr("cx", function(d) { return x(d.year) })
-    // .attr("cy", function(d) { return y(d["35 to 49 years"]) })
-    // .attr("r", 8);
-
 
     //write the y-axis label
     svg.append("text")
@@ -434,8 +424,8 @@
 
       + '</div>')
         .style('display', 'block')
-        .style('left', d3.event.pageX)
-        .style('top', height)
+        .style('left', d3.event.pageX + 'px')
+        .style('top', 300 + 'px')
         .style("visibility", "visible")
         .selectAll()
         .data(dataset)
