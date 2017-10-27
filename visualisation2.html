@@ -2,10 +2,21 @@
 <meta charset="utf-8">
 <html>
   <head>
+    <title>Git commit frequency</title>
+    <link rel="stylesheet" href="/vendor/normalize.css">
     <style>
+
+        h1 {
+          text-align: center;
+        }
+
         rect.bordered {
           stroke: #E6E6E6;
           stroke-width:2px;
+        }
+
+        rect:hover {
+          opacity: 0.5;
         }
 
         text.mono {
@@ -22,11 +33,45 @@
           fill: #000;
         }
 
+        .heatmap_tooltip {
+          text-align: center;
+          font-family: monospace;
+          font-size: 8pt;
+          color: #000;
+          position: relative;
+          background: rgba(255, 255, 255, 0.8);
+          border: 4px solid #66F;
+          padding: 5px;
+          border-radius: 8px ;
+          -webkit-border-top-left-radius: 8px;
+          -webkit-border-top-right-radius: 8px;
+          -webkit-border-bottom-right-radius: 8px;
+          -webkit-border-bottom-left-radius: 8px;
+          -khtml-border-top-left-radius: 8px;
+          -khtml-border-top-right-radius: 8px;
+          -khtml-border-bottom-right-radius: 8px;
+          -khtml-border-bottom-left-radius: 8px;
+          -moz-border-radius-topleft: 8px;
+          -moz-border-radius-topright: 8px;
+          -moz-border-radius-bottomright: 8px;
+          -moz-border-radius-bottomleft: 8px;
+          border-top-left-radius: 8px;
+          border-top-right-radius: 8px;
+          border-bottom-right-radius: 8px;
+          border-bottom-left-radius: 8px;
+          width: 150px;
+          z-index:10000;
+          -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.8);
+          -moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.8);
+          box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.8);
+        }
+
     </style>
     <script src="/vendor/d3.min.js"></script>
   </head>
 
   <body>
+    <h1>Number of git commits in a year</h1>
     <div id = "chart"></div>
     <script type = "text/javascript">
     // Variables
@@ -40,7 +85,7 @@
     var days = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
     var weeks = 52; // 52 weeks!!!
     var colors = ["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#253494"];
-    var storageArr = [];
+    // var colors = d3.scaleOrdinal(d3.schemeCategory10);
 
     // Create svg element
     // var svg = d3.select("#chart").append("svg")
@@ -52,11 +97,8 @@
 
     d3.json("/data/git-commit-frequency.json", function (error, data) {
 
-      var colorScale = d3.scaleQuantile()
-          .domain([0, 8, d3.max(data, function (d, i) {
-            //  console.log(d.days);
-            //  console.log("i value", i)
-            return d.days; })])
+    var colorScale = d3.scaleQuantile()
+          .domain([0, 8, d3.max(data, function (d, i) {return d.days; })])
           .range(colors);
 
 
@@ -76,11 +118,13 @@
   .rangeRound([height, 0]);
 
   let svg = d3.select("body").append("svg")
-    .attr("width", width)
+  .attr("width", width)
   .attr("height", height)
 
-
-  console.log(days);
+  var tooltip = d3.select("body")
+  .append("div")
+  .style("position", "absolute")
+  .style("visibility", "hidden");
 
   // Create labels!!!
   var dayLabels = svg.selectAll('.dayLabel')
@@ -99,7 +143,23 @@
   .text(function(d,i) {return i + 1; })
   .attr("x", function (d, i) { return (i * gridSize) + 40; })
   .attr("y", 10)
-  .attr("class", "mono");
+  .attr("class", "mono")
+  .on('mouseover', function (d) {
+    if (d != null) {
+      tooltip.html('<div class = "heatmap_tooltip">' +  "Week " + d.week + '</div>');
+      tooltip.style("visibility", "visible");
+    } else {
+      tooltip.style("visibility", "hidden");
+    }
+  })
+  .on('mousemove', function (d) {
+        tooltip.style("top", (d3.event.pageY - 55) + "px").style("left", (d3.event.pageX - 60) + "px");
+  })
+  .on('mouseout', function (d) {
+    tooltip.style("visibility", "hidden");
+  });
+
+
 
 
   // Generate rows for each json object
@@ -118,7 +178,6 @@
   .enter()
   .append('g')
   .attr("transform", function(d, i) {
-    // console.log(x(i));
     return "translate(" + 20*(i+2) + ", 0)"
   })
 
@@ -130,7 +189,22 @@
   .attr("width", gridSize)
   .attr("height", gridSize)
   .style("fill", colors[0])
-  .attr("class", "bordered");
+  .attr("class", "bordered")
+  .on('mouseover', function (d) {
+    if (d != null) {
+      tooltip.html('<div class = "heatmap_tooltip">' +  "No. of Commits: " + d + '</div>');
+      tooltip.style("visibility", "visible");
+    } else {
+      tooltip.style("visibility", "hidden");
+    }
+  })
+  .on('mousemove', function (d) {
+        tooltip.style("top", (d3.event.pageY - 55) + "px").style("left", (d3.event.pageX - 60) + "px");
+  })
+  .on('mouseout', function (d) {
+    tooltip.style("visibility", "hidden");
+  })
+
 
   // Generate rects for the array of days per object
 
@@ -162,7 +236,7 @@
     .attr('class', 'legend');
 
   legend.append("rect")
-  .attr("x", function(d, i) { return legendElementWidth * i; })
+  .attr("x", function(d, i) { return legendElementWidth * i+40; })
   .attr("y", gridSize * 8 + 20)
   .attr("width", legendElementWidth)
   .attr("height", gridSize / 2)
@@ -171,10 +245,8 @@
   legend.append("text")
    .attr("class", "mono")
    .text(function(d, i) { return i; })
-   .attr("x", function(d, i) { return legendElementWidth * i; })
+   .attr("x", function(d, i) { return legendElementWidth * i+60; })
    .attr("y", (gridSize * 8 + 25) + gridSize);
-
-
 
 
   });

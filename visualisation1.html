@@ -14,7 +14,7 @@
 
   .line1 {
     fill: none;
-    /*stroke: red;*/
+    stroke: red;
     stroke-width: 1.5px;
     stroke-linejoin: round;
     stroke-linecap:round;
@@ -22,7 +22,7 @@
 
   .line2 {
     fill: none;
-    /*stroke: blue;*/
+    stroke: blue;
     stroke-width: 1.5px;
     stroke-linejoin: round;
     stroke-linecap:round;
@@ -30,7 +30,7 @@
 
   .line3 {
     fill: none;
-    /*stroke: yellow;*/
+    stroke: yellow;
     stroke-width: 1.5px;
     stroke-linejoin: round;
     stroke-linecap:round;
@@ -74,17 +74,58 @@
     stroke-width: 1px;
   }
 
-  .dot {
-    fill: #ffab00;
-    stroke: #fff;
-  }
-
   .legend {
     font-size: 12px;
   }
 
   rect {
     stroke-width: 2;
+  }
+
+
+  .focus circle {
+  fill: #F1F3F3;
+  stroke: #6F257F;
+  stroke-width: 5px;
+  }
+
+  .hover-line {
+  stroke: #6F257F;
+  stroke-width: 2px;
+  stroke-dasharray: 3,3;
+  }
+
+  .heatmap_tooltip {
+    text-align: center;
+    font-family: monospace;
+    font-size: 8pt;
+    color: #000;
+    position: relative;
+    background: rgba(255, 255, 255, 0.8);
+    border: 4px solid #66F;
+    padding: 5px;
+    border-radius: 8px ;
+    -webkit-border-top-left-radius: 8px;
+    -webkit-border-top-right-radius: 8px;
+    -webkit-border-bottom-right-radius: 8px;
+    -webkit-border-bottom-left-radius: 8px;
+    -khtml-border-top-left-radius: 8px;
+    -khtml-border-top-right-radius: 8px;
+    -khtml-border-bottom-right-radius: 8px;
+    -khtml-border-bottom-left-radius: 8px;
+    -moz-border-radius-topleft: 8px;
+    -moz-border-radius-topright: 8px;
+    -moz-border-radius-bottomright: 8px;
+    -moz-border-radius-bottomleft: 8px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    width: 150px;
+    z-index:10000;
+    -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.8);
+    -moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.8);
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.8);
   }
 
   </style>
@@ -118,56 +159,69 @@
 // Add some basic styling to the chart so its easier on the eyes
 
   //Define the dimensions of the bar diagram
-
+  let x, y, tipBox;
   var margin = {top: 30, right: 20, bottom: 30, left: 50};
-  var width = 900 - margin.left - margin.right;
+  var width = 1200 - margin.left - margin.right;
   var height = 450 - margin.top - margin.bottom;
-
-  var color = d3.scaleOrdinal(d3.schemeCategory20b);
+  var headers = ["less than 7", "8 to 14 years", "15 to 24 years", "25 to 34 years", "35 to 49 years", "50 to 59 years", "60 and above"]; // to contain all the header names
 
   //parser to handle time data
-  var parseTime = d3.timeParse("%Y");
+  let parseDate = d3.timeParse("%Y");
 
   //create the bar graph svg
   var svg = d3.select("#chart")
   .append("svg")
   .attr('width', width+60)
   .attr('height', height+50)
-  .call(d3.zoom().on("zoom", function () {
-              svg.attr("transform", d3.event.transform)
-      }))
+  // .call(d3.zoom().on("zoom", function () {
+  //             svg.attr("transform", d3.event.transform)
+  //     }))
   .append("g")
   .attr("transform", "translate(" + 40 + "," + 20 + ")");
 
   //get data from csv
   d3.csv("/data/online-shoppers-by-age-group.csv", function(d) {
     //clean data, + operator is used for type conversion
-    // d.month = parseTime(d.month);
-    // d.total = +d.total;
-      d.year = parseTime(d.year);
+      d.year = parseDate(d.year);
       d["less than 7"] = +d["less than 7"];
       d["8 to 14 years"] = +d["8 to 14 years"];
       d["15 to 24 years"] = +d["15 to 24 years"];
       d["25 to 34 years"] = +d["25 to 34 years"];
       d["35 to 49 years"] = +d["35 to 49 years"];
-      d["50 to 59 years"] = +d["59 to 59 years"];
+      d["50 to 59 years"] = +d["50 to 59 years"];
       d["60 and above"] = +d["60 and above"];
-
-    console.log(d);
     return d;
   }, function(error, dataset) {
     //callback function is the data read is successful
-
     if (error) throw error;
 
-    //define the axises' scale types and values
+    // sorted data by year,
+    var dataByYear = [];
 
-    var x = d3.scaleTime()
+    dataset.forEach(function(d) {
+      dataByYear.push(d);
+    });
+
+    //define the axises' scale types and values
+    let gridSize = 20;
+    let width = (gridSize + 1) * 52;
+    let height = (gridSize + 1) * dataset.length;
+    let legendElementWidth = gridSize;
+    let legendElementHeight = gridSize;
+
+    // const tooltip = d3.select('#tooltip');
+    const tooltip = d3.select('body')
+    .append("div")
+    .style("position", "absolute")
+    .style("visibility", "hidden");
+    const tooltipLine = svg.append('line');
+
+    x = d3.scaleTime()
     .domain(d3.extent(dataset, function(d) { return d.year; })) //returns min and max range
     .rangeRound([0, width]);
 
     // max is 100% !!!
-    var y = d3.scaleLinear()
+    y = d3.scaleLinear()
     .domain([0, 100])
     .rangeRound([height, 0]);
 
@@ -176,7 +230,6 @@
     var lineLessThan7 = d3.line()
     .x(function(d) { return x(d.year); })
     .y(function(d) { return y(d["less than 7"]) })
-
 
     var line8to14 = d3.line()
     .x(function(d) { return x(d.year); })
@@ -204,7 +257,9 @@
 
     var legendRectSize = 18;
     var legendSpacing = 4;
-    var color = d3.scaleOrdinal(d3.schemeCategory20b);
+
+    // from: https://www.materialui.co/colors
+    var colors = ["#f44336","#FF9800","#FFEB3B","#4CAF50","#2196F3","#3F51B5","#9C27B0"];
 
     //add grid line
     svg.append("g")
@@ -248,13 +303,11 @@
     .attr("class", "line7")
     .attr("d", line60);
 
-
     //draw x-axis
     svg.append("g")
     .attr("class", "axis x-axis")
     .attr("transform", "translate(0," + height + ")")
     .call(d3.axisBottom(x));
-
 
     //draw the y-axis
     svg.append("g")
@@ -280,16 +333,117 @@
     .text("Percentage (%)");
 
 
+    // Legend
     var legend = svg.selectAll('.legend')
-    .data(dataset)
-    .enter
+    .data(colors)
+    .enter()
     .append('g')
     .attr('class', 'legend');
 
-    legend.append('text')
-    .attr('x', 200)
-    .attr('y', 200)
-    .text(function(d) { return d });
+    // x value remains constant
+    legend.append("rect")
+    .attr("x", gridSize * 8 + 20)
+    .attr("y", function(d, i) { return height + i*(gridSize) + 40; })
+    .attr("width", gridSize)
+    .attr("height", gridSize)
+    .style("fill", function(d, i) {
+      return colors[i]; });
+
+    // need to append to the right of the legend
+    legend.append("text")
+    .data(dataset)
+    .attr("class", "mono")
+    .text(function(d, i) { return headers[i]; })
+    .attr("x", (gridSize * 8 + 50))
+    .attr("y", function(d, i) { return height + i*(gridSize)+ 55 });
+
+    // Tooltips on specific points of a year http://bl.ocks.org/wdickerson/64535aff478e8a9fd9d9facccfef8929
+    tipBox = svg.append('rect')
+    .attr('width', width)
+    .attr('height', height)
+    .attr('opacity', 0)
+    .on('mousemove', drawTooltip)
+    .on('mouseout', removeTooltip);
+
+    function removeTooltip() {
+      if (tooltip) tooltip.style('display', 'none');
+      if (tooltipLine) tooltipLine.attr('stroke', 'none');
+    }
+
+    function drawTooltip() {
+      // oops redefined this im lazy to move it
+      var formatDate = d3.timeFormat("%Y");
+      var height = 450;
+      var xInside = d3.scaleLinear()
+      .domain([2007, 2014])
+      .range([0, width]);
+     // would have been pushed from data set but lazy..
+
+      // Date object
+      const year = x.invert(d3.mouse(this)[0]);
+      var formattedYear = formatDate(year);
+
+      const value1 = y.invert(d3.mouse(this)[1]);
+
+      console.log("value1", value1);
+
+      console.log(dataByYear[0]);
+
+      // states.sort((a, b) => {
+      //   return b.history.find(h => h.year == year).population - a.history.find(h => h.year == year).population;
+      // })
+      console.log("d3 event page x", d3.event.pageX);
+      console.log("d3 event page y", d3.event.pageY);
+
+      tooltipLine.attr('stroke', 'black')
+        .attr('x1', Math.floor(xInside(formattedYear)))
+        .attr('x2', Math.floor(xInside(formattedYear)))
+        .attr('y1', 0)
+        .attr('y2', height / 2 - 56);
+
+        // console.log(formattedYear);
+        // var test = formatDate(new Date(2007, 0, 17));
+        // console.log("2007", test);
+
+        var years = [
+        formatDate(new Date(2007, 0, 17)),
+        formatDate(new Date(2008, 0, 17)),
+        formatDate(new Date(2009, 0, 17)),
+        formatDate(new Date(2010, 0, 17)),
+        formatDate(new Date(2011, 0, 17)),
+        formatDate(new Date(2012, 0, 17)),
+        formatDate(new Date(2013, 0, 17)),
+        formatDate(new Date(2014, 0, 17))
+        ];
+
+        // console.log("YEARS ARRAY", years);
+        // console.log("INDEX", years.indexOf(formattedYear));
+        var index = years.indexOf(formattedYear);
+        //
+        // console.log("o", dataByYear[index]);
+
+      tooltip.html('<div class = "heatmap_tooltip">'
+      + "year: " + formattedYear + '<br />'
+      +  "less than 7: " +  dataByYear[index]['less than 7'] + "%"  + "<br />"
+      +  "8 to 14 years: " +  dataByYear[index]['8 to 14 years'] + "%" + "<br />"
+      +  "15 to 24 years: " +  dataByYear[index]['15 to 24 years']+ "%"  + "<br />"
+      +  "25 to 34 years: " +  dataByYear[index]['25 to 34 years'] + "%" + "<br />"
+      +  "35 to 49 years: " +  dataByYear[index]['35 to 49 years'] + "%" + "<br />"
+      +  "50 to 59 years: " +  dataByYear[index]['50 to 59 years'] + "%" + "<br />"
+      +  "60 and above: " +  dataByYear[index]['60 and above'] +  "%" + "<br />"
+
+      + '</div>')
+        .style('display', 'block')
+        .style('left', d3.event.pageX)
+        .style('top', height)
+        .style("visibility", "visible")
+        .selectAll()
+        .data(dataset)
+        .enter()
+        .append('div');
+
+    }
+
 
     });
 
